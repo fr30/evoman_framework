@@ -6,32 +6,19 @@ import pickle
 from evoman.environment import Environment
 from controller_neat import PlayerControllerNeat
 
-# Change the enemy here, the winner will be saved in winner_neat_[ENEMY_IDX].pkl
-# Keep in mind that if you run this file, the winner will be overwritten
-ENEMY_IDX = 1
-# Actual fitness values for each enemy (stored in winner_neat_[ENEMY_IDX].pkl)
-# Update these values if you run this file
-#ENEMY_1 fitness = 95.03
-#ENEMY_2 fitness = 94.21
-#ENEMY_3 fitness = 93.21
-#ENEMY_4 fitness = 90.67
-#ENEMY_5 fitness = 95.00
-#ENEMY_6 fitness = 93.68
-#ENEMY_7 fitness = 94.08
-#ENEMY_8 fitness = 93.75
 
 # choose this for not using visuals and thus making experiments faster
 headless = True
 if headless:
     os.environ["SDL_VIDEODRIVER"] = "dummy"
 
-# experiment_name = 'optimization_neat'
-# if not os.path.exists(experiment_name):
-#     os.makedirs(experiment_name)
+experiment_name = 'optimization_neat'
 
-# initializes simulation in individual evolution mode, for single static enemy.
-env = Environment(experiment_name="optimization_specialist_neat",
-                  enemies=[ENEMY_IDX],
+
+# initializes simulation in multi evolution mode, for multiple static enemies.
+env = Environment(experiment_name=experiment_name,
+                  multiplemode="yes",
+                  enemies=[1, 2, 3, 4, 5, 7, 8],
                   speed="fastest",
                   logs="off",
                   savelogs="no",
@@ -83,10 +70,10 @@ def run(config_file):
     winner = p.run(eval_genomes, 100)
 
     # Display the winning genome.
-    #print('\nBest genome:\n{!s}'.format(winner))
+    # print('\nBest genome:\n{!s}'.format(winner))
 
-    # Save the best genome in winner_neat.pkl
-    pickle.dump(winner, open('neat/winner_neat_' + str(ENEMY_IDX) + '.pkl', 'wb'))
+    # Save the best genome in winner_neat_....pkl
+    pickle.dump(winner, open('neat/winner_neat_all.pkl', 'wb'))
 
 
 if __name__ == '__main__':

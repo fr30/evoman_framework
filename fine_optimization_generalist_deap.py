@@ -12,67 +12,76 @@ import multiprocessing
 from deap import base
 from deap import creator
 from deap import tools
-from evolve.neural_net import NNController, NeuralNetwork
 from evoman.environment import Environment
 from evolve.logging import DataVisualizer
+from demo_controller import player_controller
 
 # disable visuals and thus make experiments faster
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 # hide pygame support prompt
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 
-EXPERIMENT_NAME = "nn_test"
-ENEMY_IDX = 6
+n_hidden_neurons = 10
+
+experiment_name = "nn_test"
+if not os.path.exists(experiment_name):
+    os.makedirs(experiment_name)
 
 env = Environment(
-    experiment_name=EXPERIMENT_NAME,
-    enemies=[ENEMY_IDX],
+    experiment_name=experiment_name,
+    multiplemode="yes",
+    enemies=[1, 2, 3, 4, 5, 6, 7, 8],
     speed="fastest",
     logs="off",
     savelogs="no",
-    player_controller=NNController(),
+    player_controller=player_controller(n_hidden_neurons),
     visuals=False,
 )
 
 
 @hydra.main(version_base=None, config_path=".", config_name="config")
 def main(config):
-    if not os.path.exists(EXPERIMENT_NAME):
-        os.makedirs(EXPERIMENT_NAME)
+    if not os.path.exists(experiment_name):
+        os.makedirs(experiment_name)
 
     toolbox = prepare_toolbox(config)
 
     # create a data gatherer object
-    logger = DataVisualizer(EXPERIMENT_NAME)
+    #logger = DataVisualizer(experiment_name, "plus")
 
-    NUM_RUNS = 10
+    NUM_RUNS = 1
     for i in range(NUM_RUNS):
         print(f"=====RUN {i + 1}/{NUM_RUNS}=====")
         new_seed = 2137 + i * 10
-        best_ind = train_loop(toolbox, config, logger, new_seed)
+        best_ind = train_loop(toolbox, config, new_seed, "plus")
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
-    best_ind.save_weights(os.path.join(EXPERIMENT_NAME, "weights.txt"))
+    #best_ind.save_weights(os.path.join(EXPERIMENT_NAME, "weights.txt"))
+    np.savetxt(experiment_name + '/best.txt',best_ind)
+    #logger.draw_plots()
 
 
 def prepare_toolbox(config):
     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-    creator.create("Individual", NeuralNetwork, fitness=creator.FitnessMax)
+    creator.create("Individual", np.ndarray, fitness=creator.FitnessMax)
 
     toolbox = base.Toolbox()
 
-    # Structure initializers
-    # define 'individual' to consist of randomly initialized
-    # NeuralNet with params given by INPUT_SIZE, HIDDEN, OUTPUT_SIZE
-    toolbox.register(
-        "individual",
-        creator.Individual,
-        config.nn.input_size,
-        config.nn.hidden_size,
-        config.nn.output_size,
-    )
+    saved_individual = np.loadtxt('nn_test/best234578_best_fitness.txt')
 
-    # define the population to be a list of individuals
+
+    # Structure initializers
+    toolbox.register("individual", creator.Individual, saved_individual)
+
+
+
+
+
+
+    # define the population to be a np.ndarray of individuals
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+
+
+
 
     # ----------
     # Operator registration
@@ -81,7 +90,7 @@ def prepare_toolbox(config):
     toolbox.register("evaluate", eval_fitness)
 
     # register the crossover operator
-    toolbox.register("mate", tools.cxTwoPoint)
+    toolbox.register("mate", tools.cxSimulatedBinary, eta=config.evolve.eta_crossover)
 
     # register a mutation operator with a probability to
     # flip each attribute/gene of 0.05
@@ -104,8 +113,7 @@ def prepare_toolbox(config):
 
 # the goal ('fitness') function to be maximized
 def eval_fitness(individual):
-    return (env.play(pcont=individual)[0],)
-
+    return env.play(pcont=individual)[0],
 
 def eval_gain(individual, logger, winner_num, survivor_selection):
     NUM_RUNS = 5
@@ -115,7 +123,8 @@ def eval_gain(individual, logger, winner_num, survivor_selection):
         logger.gather_box(winner_num, gain, survivor_selection)
 
 
-def train_loop(toolbox, config, logger, seed, survivor_selection):
+
+def train_loop(toolbox, config, seed, survivor_selection):
     random.seed(seed)
     np.random.seed(seed)
     # create an initial population of POP_SIZE individuals
@@ -132,9 +141,10 @@ def train_loop(toolbox, config, logger, seed, survivor_selection):
 
     # # Extracting all the fitnesses of
     fits = [ind.fitness.values[0] for ind in pop]
+
     print_statistics(fits, len(pop), len(pop))
     # save gen, max, mean, std
-    logger.gather_line(fits, g, survivor_selection)
+    #logger.gather_line(fits, g, survivor_selection)
 
     # Begin the evolution
     while g < config.train.num_gens:
@@ -143,39 +153,38 @@ def train_loop(toolbox, config, logger, seed, survivor_selection):
         print("-- Generation %i --" % g)
 
         # Select the next generation individuals
-        offspring = toolbox.parent_select(pop, config.evolve.lambda_coeff * len(pop))
+        offspring = toolbox.survivor_select(pop, config.evolve.lambda_coeff * len(pop))
         # Clone the selected individuals
         offspring = list(map(toolbox.clone, offspring))
 
-        # Shuffle the offspring
-        random.shuffle(offspring)
-
-        # Apply crossover and mutation on the offspring
-        for child1, child2 in zip(offspring[::2], offspring[1::2]):
-            # cross two individuals with probability CXPB
-            if random.random() < config.evolve.cross_prob:
-                toolbox.mate(child1, child2)
-
-                # fitness values of the children
-                # must be recalculated later
-                del child1.fitness.values
-                del child2.fitness.values
+        # # Shuffle the offspring
+        # random.shuffle(offspring)
+        #
+        # # Apply crossover and mutation on the offspring
+        # for child1, child2 in zip(offspring[::2], offspring[1::2]):
+        #     # cross two individuals with probability CXPB
+        #     if random.random() < config.evolve.cross_prob:
+        #         toolbox.mate(child1, child2)
+        #
+        #         # fitness values of the children
+        #         # must be recalculated later
+        #         del child1.fitness.values
+        #         del child2.fitness.values
 
         for mutant in offspring:
-            # mutate an individual with probability MUTPB
-            if random.random() < config.evolve.mutation_prob:
-                toolbox.mutate(mutant)
-                del mutant.fitness.values
+            # mutate all individuals
+            toolbox.mutate(mutant)
+            del mutant.fitness.values
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         update_fitness(toolbox.evaluate, invalid_ind)
-        if survivor_selection == "comma":
+        if config.evolve.selection_strategy == "comma":
             pop_len = len(pop)
             pop[:] = offspring
             pop = toolbox.survivor_select(pop, pop_len)
             pop = list(map(toolbox.clone, pop))
-        elif survivor_selection == "plus":
+        elif config.evolve.selection_strategy == "plus":
             pop_len = len(pop)
             pop[:] = pop + offspring
             pop = toolbox.survivor_select(pop, pop_len)
@@ -185,7 +194,7 @@ def train_loop(toolbox, config, logger, seed, survivor_selection):
         fits = [ind.fitness.values[0] for ind in pop]
         print_statistics(fits, len(invalid_ind), len(pop))
         # save gen, max, mean
-        logger.gather_line(fits, g, survivor_selection)
+        #logger.gather_line(fits, g, survivor_selection)
 
     print("-- End of (successful) evolution --")
     return tools.selBest(pop, 1)[0]

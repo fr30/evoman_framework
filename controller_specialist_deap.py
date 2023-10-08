@@ -8,7 +8,6 @@
 
 # imports framework
 import os
-import numpy as np
 
 from evoman.environment import Environment
 from evolve.neural_net import NNController, NeuralNetwork
@@ -25,7 +24,7 @@ if not os.path.exists(EXPERIMENT_NAME):
 
 controller = NNController()
 neural_net = NeuralNetwork(INPUT_SIZE, HIDDEN, OUTPUT_SIZE)
-neural_net.load_weights(os.path.join(EXPERIMENT_NAME, 'weights.txt'))
+neural_net.load_weights(os.path.join(EXPERIMENT_NAME, 'weights_best.txt'))
 env = Environment(experiment_name=EXPERIMENT_NAME,
                   speed="normal",
                   logs="off",
