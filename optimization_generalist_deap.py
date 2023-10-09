@@ -123,7 +123,7 @@ def train_loop(toolbox, config, logger, seed):
     print("Start of evolution")
 
     # Evaluate and update fitness for the entire population
-    update_fitness(toolbox.evaluate, pop)
+    update_fitness(toolbox.evaluate, pop, config)
 
     # # Extracting all the fitnesses of
     fits = [ind.fitness.values[0] for ind in pop]
@@ -161,7 +161,7 @@ def train_loop(toolbox, config, logger, seed):
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        update_fitness(toolbox.evaluate, invalid_ind)
+        update_fitness(toolbox.evaluate, invalid_ind, config)
         if config.evolve.selection_strategy == "comma":
             pop_len = len(pop)
             pop[:] = offspring
@@ -183,10 +183,13 @@ def train_loop(toolbox, config, logger, seed):
     return tools.selBest(pop, 1)[0]
 
 
-def update_fitness(eval_func, pop):
-    cpu_count = multiprocessing.cpu_count() - 1
-    with multiprocessing.Pool(processes=cpu_count) as pool:
-        fitnesses = pool.map(eval_func, pop)
+def update_fitness(eval_func, pop, config):
+    if config.train.multiprocessing == "true":
+        cpu_count = multiprocessing.cpu_count() - 1
+        with multiprocessing.Pool(processes=cpu_count) as pool:
+            fitnesses = pool.map(eval_func, pop)
+    else:
+        fitnesses = map(eval_func, pop)
     for ind, fit in zip(pop, fitnesses):
         ind.fitness.values = fit
     return fitnesses
