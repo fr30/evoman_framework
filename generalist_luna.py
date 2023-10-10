@@ -139,11 +139,11 @@ def migrate(islands, migration_size, num_islands):
 def train_loop_island(toolbox, config, logger, seed, survivor_selection):
 
     # Could be added to the config if we decide to use this model
-    num_gens = 100
+    num_gens = 1
     num_islands = 4
     migration_interval = 25
     migration_size = 5
-    pop_size = 25
+    pop_size = 50
     fits_all = []
 
     # generation counter
@@ -240,11 +240,8 @@ def train_loop_island(toolbox, config, logger, seed, survivor_selection):
 
     print("-- End of (successful) evolution --")
 
-    # Merge all island populations
-    pop = []
-    for island in islands:
-        pop = pop + island
-
+    # Merge all the populations of the islands
+    pop = [ind for island in islands for ind in island]
     return tools.selBest(pop, 1)[0]
 
 
