@@ -6,73 +6,77 @@
 import hydra
 import os
 import random
-import numpy as np
 import multiprocessing
+import numpy as np
 
 from deap import base
 from deap import creator
 from deap import tools
+from evolve.neural_net import NNController, NeuralNetwork
 from evoman.environment import Environment
 from evolve.logging import DataVisualizer
-from demo_controller import player_controller
 
 # disable visuals and thus make experiments faster
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 # hide pygame support prompt
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 
-n_hidden_neurons = 10
-
-experiment_name = "nn_test"
-if not os.path.exists(experiment_name):
-    os.makedirs(experiment_name)
+EXPERIMENT_NAME = "nn_test"
+ENEMY_IDX = [1, 2, 3, 4, 5, 6, 7, 8]
 
 env = Environment(
-    experiment_name=experiment_name,
+    experiment_name=EXPERIMENT_NAME,
+    enemies=ENEMY_IDX,
     multiplemode="yes",
-    enemies=[1, 2, 3, 4, 5, 7, 8],
     speed="fastest",
     logs="off",
     savelogs="no",
-    player_controller=player_controller(n_hidden_neurons),
+    player_controller=NNController(),
     visuals=False,
 )
 
 
 @hydra.main(version_base=None, config_path=".", config_name="config")
 def main(config):
-    if not os.path.exists(experiment_name):
-        os.makedirs(experiment_name)
-
-    toolbox = prepare_toolbox(config)
+    if not os.path.exists(EXPERIMENT_NAME):
+        os.makedirs(EXPERIMENT_NAME)
 
     # create a data gatherer object
-    logger = DataVisualizer(experiment_name, "plus")
+    logger = DataVisualizer(EXPERIMENT_NAME, config.evolve.selection_strategy)
+    toolbox = prepare_toolbox(config)
 
-    NUM_RUNS = 1
-    for i in range(NUM_RUNS):
-        print(f"=====RUN {i + 1}/{NUM_RUNS}=====")
+    for i in range(config.train.num_runs):
+        print(f"=====RUN {i + 1}/{config.train.num_runs}=====")
         new_seed = 2137 + i * 10
-        best_ind = train_loop(toolbox, config, logger, new_seed, "plus")
-    print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
-    #best_ind.save_weights(os.path.join(EXPERIMENT_NAME, "weights.txt"))
-    np.savetxt(experiment_name + '/best.txt',best_ind)
+        best_ind = train_loop(toolbox, config, logger, new_seed)
+
     #logger.draw_plots()
+    print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
+    best_ind.save_weights(os.path.join(EXPERIMENT_NAME, "weights.txt"))
+
+    # Result by which optuna will choose which solution performs best
+    eval_result = best_ind.fitness.values[0]
+    return eval_result
 
 
 def prepare_toolbox(config):
     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-    creator.create("Individual", np.ndarray, fitness=creator.FitnessMax)
+    creator.create("Individual", NeuralNetwork, fitness=creator.FitnessMax)
 
     toolbox = base.Toolbox()
-    # Attribute generator
-    toolbox.register("attr_float", np.random.uniform, -1, 1)
+
     # Structure initializers
-    toolbox.register("individual", tools.initRepeat, creator.Individual,
-                     toolbox.attr_float, 265)
+    # define 'individual' to consist of randomly initialized
+    # NeuralNet with params given by INPUT_SIZE, HIDDEN, OUTPUT_SIZE
+    toolbox.register(
+        "individual",
+        creator.Individual,
+        config.nn.input_size,
+        config.nn.hidden_size,
+        config.nn.output_size,
+    )
 
-
-    # define the population to be a np.ndarray of individuals
+    # define the population to be a list of individuals
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
     # ----------
@@ -86,8 +90,13 @@ def prepare_toolbox(config):
 
     # register a mutation operator with a probability to
     # flip each attribute/gene of 0.05
-    toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=config.evolve.sigma_mutation,
-                     indpb=config.evolve.indpb_mutation)
+    toolbox.register(
+        "mutate",
+        tools.mutGaussian,
+        mu=0,
+        sigma=config.evolve.sigma_mutation,
+        indpb=config.evolve.indpb_mutation,
+    )
 
     # operator for selecting individuals for breeding the next
     # generation: each individual of the current generation
@@ -105,20 +114,10 @@ def prepare_toolbox(config):
 
 # the goal ('fitness') function to be maximized
 def eval_fitness(individual):
-    f, p, e, t = env.play(pcont=individual)
-    return (p - e,)
-    #return (env.play(pcont=individual)[0],)
-
-def eval_gain(individual, logger, winner_num, survivor_selection):
-    NUM_RUNS = 5
-    for _ in range(NUM_RUNS):
-        _, p, e, _ = env.play(pcont=individual)
-        gain = p - e
-        logger.gather_box(winner_num, gain, survivor_selection)
+    return (env.play(pcont=individual)[0],)
 
 
-
-def train_loop(toolbox, config, logger, seed, survivor_selection):
+def train_loop(toolbox, config, logger, seed):
     random.seed(seed)
     np.random.seed(seed)
     # create an initial population of POP_SIZE individuals
@@ -131,14 +130,14 @@ def train_loop(toolbox, config, logger, seed, survivor_selection):
     print("Start of evolution")
 
     # Evaluate and update fitness for the entire population
-    update_fitness(toolbox.evaluate, pop)
+    update_fitness(toolbox.evaluate, pop, config)
 
     # # Extracting all the fitnesses of
     fits = [ind.fitness.values[0] for ind in pop]
 
     print_statistics(fits, len(pop), len(pop))
     # save gen, max, mean, std
-    logger.gather_line(fits, g, survivor_selection)
+    # logger.gather_line(fits, g, survivor_selection)
 
     # Begin the evolution
     while g < config.train.num_gens:
@@ -173,7 +172,7 @@ def train_loop(toolbox, config, logger, seed, survivor_selection):
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        update_fitness(toolbox.evaluate, invalid_ind)
+        update_fitness(toolbox.evaluate, invalid_ind, config)
         if config.evolve.selection_strategy == "comma":
             pop_len = len(pop)
             pop[:] = offspring
@@ -189,17 +188,19 @@ def train_loop(toolbox, config, logger, seed, survivor_selection):
         fits = [ind.fitness.values[0] for ind in pop]
         print_statistics(fits, len(invalid_ind), len(pop))
         # save gen, max, mean
-        logger.gather_line(fits, g, survivor_selection)
+        # logger.gather_line(fits, g, survivor_selection)
 
     print("-- End of (successful) evolution --")
     return tools.selBest(pop, 1)[0]
 
 
-def update_fitness(eval_func, pop):
-    # cpu_count = multiprocessing.cpu_count() - 1
-    # with multiprocessing.Pool(processes=cpu_count) as pool:
-    #     fitnesses = pool.map(eval_func, pop)
-    fitnesses = map(eval_func, pop)
+def update_fitness(eval_func, pop, config):
+    if config.train.multiprocessing:
+        cpu_count = multiprocessing.cpu_count() - 1
+        with multiprocessing.Pool(processes=cpu_count) as pool:
+            fitnesses = pool.map(eval_func, pop)
+    else:
+        fitnesses = map(eval_func, pop)
     for ind, fit in zip(pop, fitnesses):
         ind.fitness.values = fit
     return fitnesses
@@ -209,7 +210,7 @@ def print_statistics(fits, len_evaluated, len_pop):
     print("  Evaluated %i individuals" % len_evaluated)
     mean = sum(fits) / len_pop
     sum2 = sum(x * x for x in fits)
-    std = abs(sum2 / len_pop - mean ** 2) ** 0.5
+    std = abs(sum2 / len_pop - mean**2) ** 0.5
 
     print("  Min %s" % min(fits))
     print("  Max %s" % max(fits))

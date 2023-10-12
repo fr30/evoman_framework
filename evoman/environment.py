@@ -395,12 +395,15 @@ class Environment(object):
 
             # default fitness function for single solutions
     def fitness_single(self):
+        #TO DO: revert to original
+        #return 0.9*(100 - self.get_enemylife()) + 0.1*self.get_playerlife() - numpy.log(self.get_time())
         return 0.9*(100 - self.get_enemylife()) + 0.1*self.get_playerlife()
 
     # default fitness function for consolidating solutions among multiple games
     def cons_multi(self,values):
-        # return values.mean()
-        return values.mean() - values.std()
+        #TO DO: revert to original
+        #return values.mean() - values.std()
+        return values.mean()
 
     # measures the energy of the player
     def get_playerlife(self):
