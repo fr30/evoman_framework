@@ -15,7 +15,7 @@ from demo_controller import player_controller
 # imports other libs
 import numpy as np
 
-experiment_name = 'controller_generalist_demo'
+experiment_name = 'controller_generalist_luna_demo'
 # if not os.path.exists(experiment_name):
 #     os.makedirs(experiment_name)
 
@@ -30,7 +30,8 @@ env = Environment(experiment_name=experiment_name,
                   player_controller=player_controller(n_hidden_neurons),
                   visuals=True)
 
-sol = np.loadtxt('multi_demo/best.txt')
+# sol = np.loadtxt('multi_demo/best.txt')
+sol = np.loadtxt('nn_test/best_island1.txt')
 print('\n LOADING SAVED GENERALIST SOLUTION FOR ALL ENEMIES \n')
 total_fitness = 0
 total_gain = 0
