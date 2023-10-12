@@ -31,12 +31,18 @@ nn:
   output_size: 5
 
 evolve:
-  cross_prob: 0.5
-  mutation_prob: 0.2
-  lambda_coeff: 3
+  cross_prob: 0.8
+  mutation_prob: 0.8
+  lambda_coeff: 5
   selection_pressure: 3
   sigma_mutation: 1
   indpb_mutation: 0.5
   eta_crossover: 0.2
   selection_strategy: "plus" # Can be either "comma" or "plus"
 
+island:
+  pop_size : 50
+  num_gens : 1000000
+  num_islands : 5
+  migration_interval : 25
+  migration_size : 5

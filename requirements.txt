@@ -13,3 +13,7 @@ neat-python
 plotly
 pandas
 seaborn
+optuna
+cmaes
+pyswarms
+scikit-learn

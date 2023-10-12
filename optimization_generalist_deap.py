@@ -22,8 +22,7 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 
 EXPERIMENT_NAME = "nn_test"
-# ENEMY_IDX = [1, 2, 3, 4, 5, 6, 7, 8]
-ENEMY_IDX = [1, 2, 3]
+ENEMY_IDX = [1, 2, 3, 4, 5, 6, 7, 8]
 
 env = Environment(
     experiment_name=EXPERIMENT_NAME,
@@ -49,11 +48,9 @@ def main(config):
     for i in range(config.train.num_runs):
         print(f"=====RUN {i + 1}/{config.train.num_runs}=====")
         new_seed = 2137 + i * 10
-        best_ind = train_loop(
-            toolbox, config, logger, new_seed, config.evolve.selection_strategy
-        )
+        best_ind = train_loop(toolbox, config, logger, new_seed)
 
-    # logger.draw_plots()
+    #logger.draw_plots()
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
     best_ind.save_weights(os.path.join(EXPERIMENT_NAME, "weights.txt"))
 
@@ -109,9 +106,7 @@ def prepare_toolbox(config):
         "parent_select", tools.selTournament, tournsize=config.evolve.selection_pressure
     )
     toolbox.register(
-        "survivor_select",
-        tools.selTournament,
-        tournsize=config.evolve.selection_pressure,
+        "survivor_select", tools.selBest
     )
     # ----------
     return toolbox
@@ -122,7 +117,7 @@ def eval_fitness(individual):
     return (env.play(pcont=individual)[0],)
 
 
-def train_loop(toolbox, config, logger, seed, survivor_selection):
+def train_loop(toolbox, config, logger, seed):
     random.seed(seed)
     np.random.seed(seed)
     # create an initial population of POP_SIZE individuals
