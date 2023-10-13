@@ -599,21 +599,31 @@ class Environment(object):
     # repeats run for every enemy in list
     def multiple(self,pcont,econt):
 
-        vfitness, vplayerlife, venemylife, vtime = [],[],[],[]
+        # vfitness, vplayerlife, venemylife, vtime = [],[],[],[]
+        vfitness, vplayerlife, venemylife, vtime, vdefeated, vgain = [],[],[],[],[],[]
+
+        enemy_counter = 0
         for e in self.enemies:
 
-            fitness, playerlife, enemylife, time  = self.run_single(e,pcont,econt)
+            enemy_counter += 1
+            fitness, playerlife, enemylife, time = self.run_single(e,pcont,econt)
             vfitness.append(fitness)
             vplayerlife.append(playerlife)
             venemylife.append(enemylife)
             vtime.append(time)
+            vgain.append(playerlife - enemylife)
+
+            if enemylife == 0:
+                vdefeated.append(enemy_counter)
 
         vfitness = self.cons_multi(numpy.array(vfitness))
         vplayerlife = self.cons_multi(numpy.array(vplayerlife))
         venemylife = self.cons_multi(numpy.array(venemylife))
         vtime = self.cons_multi(numpy.array(vtime))
 
-        return    vfitness, vplayerlife, venemylife, vtime
+        # return    vfitness, vplayerlife, venemylife, vtime
+
+        return vfitness, vplayerlife, venemylife, vtime, vdefeated, vgain
 
 
     # checks objective mode

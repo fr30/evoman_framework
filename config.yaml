@@ -43,6 +43,6 @@ evolve:
 island:
   pop_size : 50
   num_gens : 1000000
-  num_islands : 5
+  num_islands : 4
   migration_interval : 25
   migration_size : 5
