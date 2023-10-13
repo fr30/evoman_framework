@@ -27,6 +27,9 @@ experiment_name = "island_test"
 if not os.path.exists(experiment_name):
     os.makedirs(experiment_name)
 
+if not os.path.exists("island_test_8"):
+    os.makedirs("island_test_8")
+
 env = Environment(
     experiment_name=experiment_name,
     multiplemode="yes",
@@ -120,18 +123,12 @@ def eval_fitness(individual):
     if len(n) == 8:
         print('All enemies are defeated')
         # Save the individual's data if all enemies are defeated
-        np.savetxt(experiment_name + '/island_beats8_' + str(individual) + '.txt', individual)
-
-    fitness = (p - e) - np.std(g) # Initialize gain as the difference between player's and enemy's health
-    #
-    # if gain > 50:
-    # # if len(n) > 6:
-    #     gain = gain - np.std(g)
-    #     if 6 in n:
-    #         gain += 3  # Add a bonus to the gain if enemy 2 is defeated
+        fitness = (p - e)
+        np.savetxt('island_test_8/island_8_' + str(fitness) + '.txt', individual)
+    else:
+        fitness = (p - e) - np.std(g)
 
     return (fitness,)
-    # return (env.play(pcont=individual)[0],)
 
 def eval_gain(individual, logger, winner_num, survivor_selection):
     NUM_RUNS = 5
@@ -169,8 +166,6 @@ def train_loop_island(toolbox, config, logger, seed):
     migration_size = config.island.migration_size
     fits_all = []
 
-    # generation counter
-    g = 0
 
     random.seed(seed)
     np.random.seed(seed)
@@ -199,8 +194,7 @@ def train_loop_island(toolbox, config, logger, seed):
 
     for generation in range(num_gens):
         # A new generation
-        g = g + 1
-        print("-- Generation %i --" % g)
+        print("-- Generation %i --" % generation)
 
         # Empty list for fitnesses of all islands per generation
         fits_all = []
@@ -251,17 +245,6 @@ def train_loop_island(toolbox, config, logger, seed):
             # Gather all the fitnesses in one list and print the stats
             fits = [ind.fitness.values[0] for ind in islands[i]]
             print_statistics(fits, len(invalid_ind), len(islands[i]))
-            if max(fits) >= 50:
-                np.savetxt(experiment_name + '/island_gain_' + str(max(fits)) + '.txt', islands[i][fits.index(max(fits))])
-
-            # def const_mult_updated(self, values):
-            #     return values.mean() - values.std()
-            #
-            # if max(fits) > 45:
-            #     print('using updated function')
-            #     env.cons_multi = const_mult_updated
-            # fits_all.append(fits)
-
         # save gen, max, mean
         #logger.gather_line(fits_all, g, survivor_selection)
 
