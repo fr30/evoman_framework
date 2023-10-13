@@ -114,7 +114,7 @@ def prepare_toolbox(config):
 
 # the goal ('fitness') function to be maximized
 def eval_fitness(individual):
-    f, p, e, t = env.play(pcont=individual)
+    f, p, e, t, n, g = env.play(pcont=individual)
     return (p - e,)
     # return (env.play(pcont=individual)[0],)
 

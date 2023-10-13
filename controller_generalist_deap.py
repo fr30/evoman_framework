@@ -44,7 +44,7 @@ env = Environment(experiment_name=EXPERIMENT_NAME,
 # neural_net.load_weights(os.path.join(EXPERIMENT_NAME, 'weights_all.txt'))
 print('\n LOADING SAVED SPECIALIST DEAP SOLUTION FOR ALL ENEMEIES \n')
 directory = 'island_test'
-sol = np.loadtxt(os.path.join(directory, 'island_gain_69.87500000000009.txt'))
+sol = np.loadtxt(os.path.join(directory, 'island_beats8_<deap.creator.Individual object at 0x16f6440d0>.txt'))
 num_of_defeated_enemies = 0
 total_fitness = 0
 total_gain = 0
