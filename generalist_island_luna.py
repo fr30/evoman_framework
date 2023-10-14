@@ -120,9 +120,9 @@ def prepare_toolbox(config):
 def eval_fitness(individual):
     f, p, e, t, n, g = env.play(pcont=individual)
 
-    if len(n) == 8:
-        # Save the individual's data if all enemies are defeated
-        np.savetxt(experiment_name + '/island_beats8_' + str(p-e) + '.txt', individual)
+    # if len(n) == 8:
+    #     # Save the individual's data if all enemies are defeated
+    #     np.savetxt(experiment_name + '/island_beats8_' + str(p-e) + '.txt', individual)
 
     fitness = (p - e) - np.std(g) # Initialize gain as the difference between player's and enemy's health
     return (fitness,)
@@ -242,6 +242,9 @@ def train_loop_island(toolbox, config, logger, seed):
             # Gather all the fitnesses in one list and print the stats
             fits = [ind.fitness.values[0] for ind in islands[i]]
             print_statistics(fits, len(invalid_ind), len(islands[i]))
+            if max(fits) > 42:
+                print("Probably beating 8...")
+                np.savetxt(experiment_name + '/island_8_' + str(max(fits)) + '.txt', islands[i][fits.index(max(fits))])
 
         # save gen, max, mean
         #logger.gather_line(fits_all, g, survivor_selection)
