@@ -22,7 +22,7 @@ hydra:
 train:
   num_runs: 1
   pop_size: 100
-  num_gens: 3
+  num_gens: 100000
   multiprocessing: True
 
 nn:
@@ -36,7 +36,7 @@ evolve:
   lambda_coeff: 5
   selection_pressure: 3
   sigma_mutation: 1
-  indpb_mutation: 0.5
+  indpb_mutation: 0.05
   eta_crossover: 0.2
   selection_strategy: "plus" # Can be either "comma" or "plus"
 

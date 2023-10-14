@@ -66,7 +66,7 @@ def prepare_toolbox(config):
 
     toolbox = base.Toolbox()
 
-    saved_individual = np.loadtxt('nn_test/best234578_best_fitness.txt')
+    saved_individual = np.loadtxt('island_8_fine/island_8_59.97500000000018.txt')
 
 
     # Structure initializers
@@ -113,7 +113,17 @@ def prepare_toolbox(config):
 
 # the goal ('fitness') function to be maximized
 def eval_fitness(individual):
-    return env.play(pcont=individual)[0],
+    f, p, e, t, n, g = env.play(pcont=individual)
+
+    if len(n) == 8:
+        # Save the individual's data if all enemies are defeated
+        fitness = (p - e)
+        if fitness > 59.97:
+            np.savetxt('island_8_fine/island_8_' + str(fitness) + '.txt', individual)
+    else:
+        fitness = (p - e) - np.std(g) - 100
+
+    return (fitness,)
 
 def eval_gain(individual, logger, winner_num, survivor_selection):
     NUM_RUNS = 5
@@ -153,7 +163,8 @@ def train_loop(toolbox, config, seed, survivor_selection):
         print("-- Generation %i --" % g)
 
         # Select the next generation individuals
-        offspring = toolbox.survivor_select(pop, config.evolve.lambda_coeff * len(pop))
+        offspring = toolbox.parent_select(pop, config.evolve.lambda_coeff * len(pop))
+
         # Clone the selected individuals
         offspring = list(map(toolbox.clone, offspring))
 
@@ -182,12 +193,12 @@ def train_loop(toolbox, config, seed, survivor_selection):
         if config.evolve.selection_strategy == "comma":
             pop_len = len(pop)
             pop[:] = offspring
-            pop = toolbox.survivor_select(pop, pop_len)
+            pop = toolbox.parent_select(pop, pop_len)
             pop = list(map(toolbox.clone, pop))
         elif config.evolve.selection_strategy == "plus":
             pop_len = len(pop)
             pop[:] = pop + offspring
-            pop = toolbox.survivor_select(pop, pop_len)
+            pop = toolbox.parent_select(pop, pop_len)
             pop = list(map(toolbox.clone, pop))
 
         # Gather all the fitnesses in one list and print the stats
@@ -201,10 +212,10 @@ def train_loop(toolbox, config, seed, survivor_selection):
 
 
 def update_fitness(eval_func, pop):
-    # cpu_count = multiprocessing.cpu_count() - 1
-    # with multiprocessing.Pool(processes=cpu_count) as pool:
-    #     fitnesses = pool.map(eval_func, pop)
-    fitnesses = map(eval_func, pop)
+    cpu_count = multiprocessing.cpu_count() - 1
+    with multiprocessing.Pool(processes=cpu_count) as pool:
+        fitnesses = pool.map(eval_func, pop)
+    #fitnesses = map(eval_func, pop)
     for ind, fit in zip(pop, fitnesses):
         ind.fitness.values = fit
     return fitnesses
