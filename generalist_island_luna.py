@@ -9,6 +9,9 @@ import random
 import numpy as np
 import multiprocessing
 
+# import pickle
+# import time
+
 from deap import base
 from deap import creator
 from deap import tools
@@ -60,7 +63,7 @@ def main(config):
         best_ind = train_loop_island(toolbox, config, logger, new_seed)
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
     # best_ind.save_weights(os.path.join(EXPERIMENT_NAME, "weights.txt"))
-    np.savetxt(experiment_name + '/best.txt', best_ind)
+    np.savetxt(experiment_name + "/best.txt", best_ind)
     # logger.draw_plots()
 
 
@@ -109,9 +112,7 @@ def prepare_toolbox(config):
     toolbox.register(
         "parent_select", tools.selTournament, tournsize=config.evolve.selection_pressure
     )
-    toolbox.register(
-        "survivor_select", tools.selBest
-    )
+    toolbox.register("survivor_select", tools.selBest)
     # ----------
     return toolbox
 
@@ -123,9 +124,9 @@ def eval_fitness(individual):
     # if len(n) == 8:
     #     # Save the individual's data if all enemies are defeated
     #     np.savetxt(experiment_name + '/island_beats8_' + str(p-e) + '.txt', individual)
-
-    fitness = (p - e) - np.std(g) # Initialize gain as the difference between player's and enemy's health
+    fitness = (p - e) - np.std(g)
     return (fitness,)
+
 
 def eval_gain(individual, logger, winner_num, survivor_selection):
     NUM_RUNS = 5
@@ -133,7 +134,7 @@ def eval_gain(individual, logger, winner_num, survivor_selection):
         _, p, e, _, n = env.play(pcont=individual)
         gain = p - e
 
-        #logger.gather_box(winner_num, gain, survivor_selection)
+        # logger.gather_box(winner_num, gain, survivor_selection)
 
 
 def migrate(islands, migration_size, num_islands):
@@ -156,13 +157,14 @@ def migrate(islands, migration_size, num_islands):
 
 def train_loop_island(toolbox, config, logger, seed):
     # Could be added to the config if we decide to use this model
-    pop_size =  config.island.pop_size
+    pop_size = config.island.pop_size
     num_gens = config.island.num_gens
     num_islands = config.island.num_islands
     migration_interval = config.island.migration_interval
     migration_size = config.island.migration_size
     fits_all = []
-
+    # checkpoint_name = f"checkpoint_{time.time()}"
+    # last_checkpoint_gen = 0
 
     random.seed(seed)
     np.random.seed(seed)
@@ -189,7 +191,13 @@ def train_loop_island(toolbox, config, logger, seed):
     # save gen, max, mean, std
     # logger.gather_line(fits_all, g, survivor_selection)
 
-    for generation in range(num_gens):
+    generation = 0
+    while generation < num_gens:
+        generation += 1
+        # if generation % 5:
+        #     last_checkpoint_gen = generation
+        #     with open(f"checkpoints/{checkpoint_name}.pkl", "wb") as f:
+        #         pickle.dump(islands, f)
         # A new generation
         print("-- Generation %i --" % generation)
 
@@ -198,11 +206,12 @@ def train_loop_island(toolbox, config, logger, seed):
 
         # Perform evolution on each island
         for i in range(num_islands):
-
-            print(f'Island {i + 1}')
+            print(f"Island {i + 1}")
 
             # create offspring
-            offspring = toolbox.parent_select(islands[i], config.evolve.lambda_coeff * len(islands[i]))
+            offspring = toolbox.parent_select(
+                islands[i], config.evolve.lambda_coeff * len(islands[i])
+            )
 
             # Clone the selected individuals
             offspring = list(map(toolbox.clone, offspring))
@@ -228,7 +237,19 @@ def train_loop_island(toolbox, config, logger, seed):
 
             # Evaluate the individuals with an invalid fitness
             invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-            update_fitness(toolbox.evaluate, invalid_ind, config.train.multiprocessing)
+            try:
+                update_fitness(
+                    toolbox.evaluate,
+                    invalid_ind,
+                    config.train.multiprocessing,
+                )
+            except:
+                print("Eval fitness failed, loading from checkpoint")
+                generation -= 1
+                break
+                # with open(f"checkpoints/{checkpoint_name}.pkl", "rb") as pickle_file:
+                #     islands = pickle.load(pickle_file)
+                # islands = pickle.loads(f"checkpoints/{checkpoint_name}.pkl")
 
             # Replace parents with offspring
             islands[i][:] = offspring
@@ -244,10 +265,12 @@ def train_loop_island(toolbox, config, logger, seed):
             print_statistics(fits, len(invalid_ind), len(islands[i]))
             if max(fits) > 42:
                 print("Probably beating 8...")
-                np.savetxt(experiment_name + '/island_8_' + str(max(fits)) + '.txt', islands[i][fits.index(max(fits))])
-
+                np.savetxt(
+                    experiment_name + "/island_8_" + str(max(fits)) + ".txt",
+                    islands[i][fits.index(max(fits))],
+                )
         # save gen, max, mean
-        #logger.gather_line(fits_all, g, survivor_selection)
+        # logger.gather_line(fits_all, g, survivor_selection)
 
         # Perform migration every `migration_interval` generations
         if generation % migration_interval == 0:
@@ -276,7 +299,7 @@ def print_statistics(fits, len_evaluated, len_pop):
     print("  Evaluated %i individuals" % len_evaluated)
     mean = sum(fits) / len_pop
     sum2 = sum(x * x for x in fits)
-    std = abs(sum2 / len_pop - mean ** 2) ** 0.5
+    std = abs(sum2 / len_pop - mean**2) ** 0.5
 
     print("  Min %s" % min(fits))
     print("  Max %s" % max(fits))
