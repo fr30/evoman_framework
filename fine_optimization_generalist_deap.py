@@ -66,7 +66,7 @@ def prepare_toolbox(config):
 
     toolbox = base.Toolbox()
 
-    saved_individual = np.loadtxt('island_8_fine/island_8_59.97500000000018.txt')
+    saved_individual = np.loadtxt('island_8_fine/island_8_61.75000000000018.txt')
 
 
     # Structure initializers
@@ -118,7 +118,7 @@ def eval_fitness(individual):
     if len(n) == 8:
         # Save the individual's data if all enemies are defeated
         fitness = (p - e)
-        if fitness > 59.97:
+        if fitness > 61.75:
             np.savetxt('island_8_fine/island_8_' + str(fitness) + '.txt', individual)
     else:
         fitness = (p - e) - np.std(g) - 100
@@ -189,7 +189,7 @@ def train_loop(toolbox, config, seed, survivor_selection):
 
         # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        update_fitness(toolbox.evaluate, invalid_ind)
+        update_fitness(toolbox.evaluate, invalid_ind, config.train.multiprocessing)
         if config.evolve.selection_strategy == "comma":
             pop_len = len(pop)
             pop[:] = offspring
@@ -211,11 +211,13 @@ def train_loop(toolbox, config, seed, survivor_selection):
     return tools.selBest(pop, 1)[0]
 
 
-def update_fitness(eval_func, pop):
-    cpu_count = multiprocessing.cpu_count() - 1
-    with multiprocessing.Pool(processes=cpu_count) as pool:
-        fitnesses = pool.map(eval_func, pop)
-    #fitnesses = map(eval_func, pop)
+def update_fitness(eval_func, pop, multiprocessing_param):
+    if multiprocessing_param:
+        cpu_count = multiprocessing.cpu_count()
+        with multiprocessing.Pool(processes=cpu_count) as pool:
+            fitnesses = pool.map(eval_func, pop)
+    else:
+        fitnesses = map(eval_func, pop)
     for ind, fit in zip(pop, fitnesses):
         ind.fitness.values = fit
     return fitnesses
