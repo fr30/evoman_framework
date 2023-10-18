@@ -22,8 +22,11 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 
 EXPERIMENT_NAME = "optimization_generalist_island"
-enemies = [2, 4, 7, 8]
-#enemies = [1, 5, 6]
+# enemies = [2, 3, 5, 8]
+# enemies = [7, 8]
+# enemies = [2, 4, 7, 8]
+# enemies = [1, 5, 6]
+enemies = [2, 5, 6]
 
 n_hidden_neurons = 10
 
@@ -244,7 +247,7 @@ def train_loop_island(toolbox, config, logger, seed, enemies):
 
 def update_fitness(eval_func, pop, multiprocessing_param):
     if multiprocessing_param:
-        cpu_count = multiprocessing.cpu_count() - 3
+        cpu_count = multiprocessing.cpu_count() - 2
         with multiprocessing.Pool(processes=cpu_count) as pool:
             fitnesses = pool.map(eval_func, pop)
     else:
