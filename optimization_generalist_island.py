@@ -22,8 +22,8 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 
 EXPERIMENT_NAME = "optimization_generalist_island"
-#enemies = [2, 3, 5, 8]
-enemies = [1, 5, 6]
+enemies = [2, 3, 5, 8]
+#enemies = [1, 5, 6]
 
 n_hidden_neurons = 10
 
@@ -268,4 +268,4 @@ def print_statistics(fits, len_evaluated, len_pop):
 
 if __name__ == "__main__":
     main()
-    #os.system('afplay /System/Library/Sounds/Sosumi.aiff')
+    os.system('afplay /System/Library/Sounds/Sosumi.aiff')

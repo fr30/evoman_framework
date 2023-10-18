@@ -137,6 +137,6 @@ def _read_data_box(directory, enemies):
 
 
 if __name__ == "__main__":
-    #_draw_line_plot("optimization_generalist_island", "optimization_generalist_pso", [2, 3, 5, 8])
-    #_draw_line_plot("optimization_generalist_island", "optimization_generalist_pso", [1, 5, 6])
+    _draw_line_plot("optimization_generalist_island", "optimization_generalist_pso", [2, 3, 5, 8])
+    _draw_line_plot("optimization_generalist_island", "optimization_generalist_pso", [1, 5, 6])
     _draw_box_plots("optimization_generalist_island", "optimization_generalist_pso", [2, 3, 5, 8], [1, 5, 6])

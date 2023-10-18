@@ -19,8 +19,8 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 
 EXPERIMENT_NAME = "optimization_generalist_pso"
-#enemies = [2, 3, 5, 8]
-enemies = [1, 5, 6]
+enemies = [2, 3, 5, 8]
+#enemies = [1, 5, 6]
 
 env = Environment(
     experiment_name=EXPERIMENT_NAME,
@@ -127,6 +127,9 @@ def train_loop_pso(toolbox, config, logger, seed, enemies):
     for part in pop:
         part.fitness.values = toolbox.evaluate(individual=np.array(part))
 
+    # Inertia weight starts at 1 and linearly decreases to 0.1
+    w = 1
+    w_dec = 1/ GEN
     for g in range(GEN):
         for part in pop:
             part.fitness.values = toolbox.evaluate(np.array(part))
@@ -137,7 +140,8 @@ def train_loop_pso(toolbox, config, logger, seed, enemies):
                 best = creator.Particle(part)
                 best.fitness.values = part.fitness.values
         for part in pop:
-            toolbox.update(part, best)
+            toolbox.update(part, best, w)
+        w -= w_dec
 
         # Gather all the fitnesses in one list and print the stats
         logbook.record(gen=g, **stats.compile(pop))
@@ -147,14 +151,12 @@ def train_loop_pso(toolbox, config, logger, seed, enemies):
     return best
 
 
-def updateParticle(part, best, phi1, phi2):
+def updateParticle(part, best, w, phi1, phi2):
     u1 = np.random.uniform(0, phi1, len(part))
     u2 = np.random.uniform(0, phi2, len(part))
-    # inertia weight w = 1
-    # multiplying by 1 is redundant
     v_u1 = u1 * (part.best - part)
     v_u2 = u2 * (best - part)
-    part.speed += v_u1 + v_u2
+    part.speed = w * part.speed + (v_u1 + v_u2)
     for i, speed in enumerate(part.speed):
         if abs(speed) < part.smin:
             part.speed[i] = math.copysign(part.smin, speed)
@@ -165,5 +167,5 @@ def updateParticle(part, best, phi1, phi2):
 
 if __name__ == "__main__":
     main()
-    #os.system('afplay /System/Library/Sounds/Sosumi.aiff')
+    os.system('afplay /System/Library/Sounds/Sosumi.aiff')
 
