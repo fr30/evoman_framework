@@ -57,12 +57,10 @@ pso:
   phi1: 2.0
   phi2: 2.0
 
-# params obtained by optuna for enemies = [2, 3, 5, 8] and [1, 5, 6]
-# NOT used for plotting
-
+# params obtained by optuna
 # pso:
-#     smin: -1.0
-#     smax: 4.0
-#     phi1: 1.5
+#     smin: -3.0
+#     smax: 3.0
+#     phi1: 2.0
 #     phi2: 2.0
 
