@@ -19,8 +19,11 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 
 EXPERIMENT_NAME = "optimization_generalist_pso"
+# enemies = [2, 3, 5, 8]
+# enemies = [7, 8]
 enemies = [2, 4, 7, 8]
-#enemies = [1, 5, 6]
+# enemies = [1, 5, 6]
+enemies = [2, 5, 6]
 
 env = Environment(
     experiment_name=EXPERIMENT_NAME,
@@ -129,7 +132,7 @@ def train_loop_pso(toolbox, config, logger, seed, enemies):
 
     # Inertia weight starts at 1 and linearly decreases to 0.1
     w = 1
-    w_dec = 1/ GEN
+    w_dec = 1 / GEN
     for g in range(GEN):
         for part in pop:
             part.fitness.values = toolbox.evaluate(np.array(part))
@@ -168,4 +171,3 @@ def updateParticle(part, best, w, phi1, phi2):
 if __name__ == "__main__":
     main()
     os.system('afplay /System/Library/Sounds/Sosumi.aiff')
-
